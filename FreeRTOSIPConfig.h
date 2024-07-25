@@ -42,23 +42,70 @@ connected. */
 //extern void printf( const char *pcFormatString, ... );
 #include <stdio.h>
 
-#define ipconfigBUFFER_PADDING 14
-
-/* Set to 1 to print out debug messages.  If ipconfigHAS_DEBUG_PRINTF is set to
-1 then FreeRTOS_debug_printf should be defined to the function used to print
-out the debugging messages. */
-#define ipconfigHAS_DEBUG_PRINTF	0
-#if( ipconfigHAS_DEBUG_PRINTF == 1 )
-	#define FreeRTOS_debug_printf(X)	printf X
+/* Space left at the beginning of a network buffer storage area to store a
+ * pointer back to the network buffer.  Should be a multiple of uintptr_t to ensure uintptr_t byte
+ * alignment is maintained on architectures that require it.
+ *
+ * In order to get a 32-bit alignment of network packets, an offset of 2 bytes
+ * would be desirable, as defined by ipconfigPACKET_FILLER_SIZE.  So the malloc'd
+ * buffer will have the following contents:
+ *  uintptr_t pointer;   // uintptr_t-aligned
+ *  uchar_8 filler[6];
+ *  << ETH-header >>    // half-word-aligned
+ *  uchar_8 dest[6];    // start of pucEthernetBuffer
+ *  uchar_8 dest[6];
+ *  uchar16_t type;
+ *  << IP-header >>     // word-aligned
+ *  uint8_t ucVersionHeaderLength;
+ *  etc
+ */
+#ifdef __CHERI_PURE_CAPABILITY__
+    #if __riscv_xlen == 32
+        #define ipconfigBUFFER_PADDING    14
+    #else
+        #define ipconfigBUFFER_PADDING    22
+    #endif
+#else
+    #if __riscv_xlen == 64
+        #define ipconfigBUFFER_PADDING    14
+    #endif
 #endif
 
-/* Set to 1 to print out non debugging messages, for example the output of the
-FreeRTOS_netstat() command, and ping replies.  If ipconfigHAS_PRINTF is set to 1
-then FreeRTOS_printf should be set to the function used to print out the
-messages. */
-#define ipconfigHAS_PRINTF			1
+#ifdef BESSPIN_TOOL_SUITE
+    /* APPLICATION SPECIFIC CONFIGURATION
+       ----------------------------------
+       We currently offer two options here
+       1. The BESSPIN tool-suite
+       2. Anything else
+
+       For the BESSPIN tool-suite, we load addition macro definitions from besspinFreeRTOSIPConfig.h
+
+       For anything else, we set sensible default values for the following defines
+        configUSE_DNS
+        ipconfigUSE_DHCP
+        ipconfigMAXIMUM_DISCOVER_TX_PERIOD
+    */
+    #include "besspinFreeRTOSIPConfig.h"
+#endif
+
+#ifndef BESSPIN_TOOL_SUITE
+    /* Set to 1 to print out debug messages.  If ipconfigHAS_DEBUG_PRINTF is set to
+    1 then FreeRTOS_debug_printf should be defined to the function used to print
+    out the debugging messages. */
+    #define ipconfigHAS_DEBUG_PRINTF	0
+
+    /* Set to 1 to print out non debugging messages, for example the output of the
+    FreeRTOS_netstat() command, and ping replies.  If ipconfigHAS_PRINTF is set to 1
+    then FreeRTOS_printf should be set to the function used to print out the
+    messages. */
+    #define ipconfigHAS_PRINTF			1
+#endif //BESSPIN_TOOL_SUITE
+
+#if( ipconfigHAS_DEBUG_PRINTF == 1 )
+    #define FreeRTOS_debug_printf(X)    printf X
+#endif
 #if( ipconfigHAS_PRINTF == 1 )
-	#define FreeRTOS_printf(X)			printf X
+    #define FreeRTOS_printf(X)          printf X
 #endif
 
 /* Define the byte order of the target MCU (the MCU FreeRTOS+TCP is executing
@@ -296,7 +343,7 @@ disconnecting stage will timeout after a period of non-activity. */
 #define ipconfigZERO_COPY_RX_DRIVER			( 0 )
 #define ipconfigZERO_COPY_TX_DRIVER			( 0 )
 
-#ifndef FETT_APPS
+#ifndef BESSPIN_TOOL_SUITE
     /* Demo config */
     /* The address of an echo server that will be used by the two demo echo client
     tasks.
@@ -339,7 +386,7 @@ disconnecting stage will timeout after a period of non-activity. */
     #define configNET_MASK1		255
     #define configNET_MASK2		255
     #define configNET_MASK3		0
-#endif //ndef FETT_APPS
+#endif //ndef BESSPIN_TOOL_SUITE
 
 /* Default DNS server configuration.  OpenDNS addresses are 208.67.222.222 and
 208.67.220.220.  Used in ipconfigUSE_DNS is set to 0, or ipconfigUSE_DNS is set
@@ -371,23 +418,7 @@ to 1 but a DNS server cannot be contacted.*/
 #define ipconfigCHECK_IP_QUEUE_SPACE 1
 #define ipconfigTCP_IP_SANITY 1
 
-#ifdef FETT_APPS
-    /* APPLICATION SPECIFIC CONFIGURATION
-       ----------------------------------
-       We currently offer two options here
-       1. The FETT application
-       2. Anything else
-
-       For the FETT application, we load addition macro definitions from fettFreeRTOSIPConfig.h
-
-       For anything else, we set sensible default values for the following defines
-        configUSE_DNS
-        ipconfigUSE_DHCP
-        ipconfigMAXIMUM_DISCOVER_TX_PERIOD
-    */
-    #include "fettFreeRTOSIPConfig.h"
-#else
-
+#ifndef BESSPIN_TOOL_SUITE
     /* If ipconfigUSE_DHCP is 1 then FreeRTOS+TCP will attempt to retrieve an IP
     address, netmask, DNS server address and gateway address from a DHCP server.  If
     ipconfigUSE_DHCP is 0 then FreeRTOS+TCP will use a static IP address.  The
@@ -409,7 +440,7 @@ to 1 but a DNS server cannot be contacted.*/
     /* Set ipconfigUSE_DNS to 1 to include a basic DNS client/resolver.  DNS is used
     through the FreeRTOS_gethostbyname() API function. */
     #define ipconfigUSE_DNS         1
-#endif // FETT_APPS
+#endif // BESSPIN_TOOL_SUITE
 
 //#define ipconfigETHERNET_MINIMUM_PACKET_BYTES 64
 #endif /* FREERTOS_IP_CONFIG_H */

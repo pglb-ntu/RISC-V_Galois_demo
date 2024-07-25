@@ -129,7 +129,7 @@
 /* Runtime stats definitions */
 // TODO: use only for debugging
 #define configUSE_STATS_FORMATTING_FUNCTIONS 1
-extern uint32_t port_get_current_mtime(void);
+extern unsigned long port_get_current_mtime(void);
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
 #define portGET_RUN_TIME_COUNTER_VALUE() port_get_current_mtime()
 
@@ -180,8 +180,8 @@ header file. */
             ;                     \
     }
 
-#ifdef FETT_APPS
-    #include "fettFreeRTOSConfig.h"
+#ifdef BESSPIN_TOOL_SUITE
+    #include "besspinFreeRTOSConfig.h"
 #endif
 
 #endif /* FREERTOS_CONFIG_H */

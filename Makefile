@@ -10,13 +10,27 @@ TARGET=$(CCPATH)riscv64-unknown-elf
 
 XLEN?=32
 
+ifeq ($(CHERI),1)
+	USE_CLANG		= yes
+endif
+
 ifeq ($(XLEN),64)
+ifeq ($(CHERI),1)
+	ARCH 		= -march=rv64imacxcheri
+	ABI 		= -mabi=l64pc128
+else
 	ARCH 		= -march=rv64imac
 	ABI 		= -mabi=lp64
+endif
 	CLANG_ARCH  = riscv64
+else
+ifeq ($(CHERI),1)
+	ARCH 		= -march=rv32imxcheri
+	ABI 		= -mabi=il32pc64
 else
 	ARCH 		= -march=rv32im
 	ABI 		= -mabi=ilp32
+endif
 	CLANG_ARCH  = riscv32
 endif
 
@@ -91,7 +105,12 @@ FREERTOS_SRC = \
 APP_SOURCE_DIR	= ../Common/Minimal
 
 PORT_SRC = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISC-V/port.c
-PORT_ASM = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISC-V/portASM.S
+
+ifeq ($(CHERI),1)
+	PORT_ASM = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISC-V/chip_specific_extensions/CHERI/portASM.S
+else
+	PORT_ASM = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISC-V/portASM.S
+endif
 
 INCLUDES = \
 	-I. \
@@ -110,70 +129,78 @@ CFLAGS = $(WARNINGS) $(C_WARNINGS) $(INCLUDES)
 DEMO_SRC = main.c \
 	demo/$(PROG).c
 
-ifneq ($(BSP),vcu118)
-	$(error Unsupported Board Support Package (BSP) selected: $(BSP))
-endif
-
 APP_SRC = \
 	bsp/bsp.c \
 	bsp/plic_driver.c \
-	bsp/syscalls.c \
-	bsp/uart.c \
-	bsp/iic.c \
-	bsp/gpio.c \
-	bsp/spi.c \
-	bsp/xilinx/uartns550/xuartns550.c \
-	bsp/xilinx/uartns550/xuartns550_g.c \
-	bsp/xilinx/uartns550/xuartns550_sinit.c \
-	bsp/xilinx/uartns550/xuartns550_selftest.c \
-	bsp/xilinx/uartns550/xuartns550_stats.c \
-	bsp/xilinx/uartns550/xuartns550_options.c \
-	bsp/xilinx/uartns550/xuartns550_intr.c \
-	bsp/xilinx/uartns550/xuartns550_l.c \
-	bsp/xilinx/axidma/xaxidma_bd.c \
-	bsp/xilinx/axidma/xaxidma_bdring.c \
-	bsp/xilinx/axidma/xaxidma.c \
-	bsp/xilinx/axidma/xaxidma_selftest.c \
-	bsp/xilinx/axidma/xaxidma_g.c \
-	bsp/xilinx/axidma/xaxidma_sinit.c \
-	bsp/xilinx/axiethernet/xaxiethernet.c \
-	bsp/xilinx/axiethernet/xaxiethernet_control.c \
-	bsp/xilinx/axiethernet/xaxiethernet_g.c \
-	bsp/xilinx/axiethernet/xaxiethernet_sinit.c \
-	bsp/xilinx/iic/xiic.c \
-	bsp/xilinx/iic/xiic_g.c \
-	bsp/xilinx/iic/xiic_l.c \
-	bsp/xilinx/iic/xiic_sinit.c \
-	bsp/xilinx/iic/xiic_selftest.c \
-	bsp/xilinx/iic/xiic_master.c \
-	bsp/xilinx/iic/xiic_intr.c \
-	bsp/xilinx/iic/xiic_stats.c \
-	bsp/xilinx/spi/xspi.c \
-	bsp/xilinx/spi/xspi_g.c \
-	bsp/xilinx/spi/xspi_sinit.c \
-	bsp/xilinx/spi/xspi_selftest.c \
-	bsp/xilinx/spi/xspi_options.c \
-	bsp/xilinx/gpio/xgpio.c \
-	bsp/xilinx/gpio/xgpio_extra.c \
-	bsp/xilinx/gpio/xgpio_g.c \
-	bsp/xilinx/gpio/xgpio_intr.c \
-	bsp/xilinx/gpio/xgpio_selftest.c \
-	bsp/xilinx/gpio/xgpio_sinit.c \
-	bsp/xilinx/common/xbasic_types.c \
-	bsp/xilinx/common/xil_io.c \
-	bsp/xilinx/common/xil_assert.c
+	bsp/syscalls.c
+ifeq ($(BSP),vcu118)
+	BSP_SRC = \
+		bsp/uart.c \
+		bsp/iic.c \
+		bsp/gpio.c \
+		bsp/spi.c \
+		bsp/xilinx/uartns550/xuartns550.c \
+		bsp/xilinx/uartns550/xuartns550_g.c \
+		bsp/xilinx/uartns550/xuartns550_sinit.c \
+		bsp/xilinx/uartns550/xuartns550_selftest.c \
+		bsp/xilinx/uartns550/xuartns550_stats.c \
+		bsp/xilinx/uartns550/xuartns550_options.c \
+		bsp/xilinx/uartns550/xuartns550_intr.c \
+		bsp/xilinx/uartns550/xuartns550_l.c \
+		bsp/xilinx/axidma/xaxidma_bd.c \
+		bsp/xilinx/axidma/xaxidma_bdring.c \
+		bsp/xilinx/axidma/xaxidma.c \
+		bsp/xilinx/axidma/xaxidma_selftest.c \
+		bsp/xilinx/axidma/xaxidma_g.c \
+		bsp/xilinx/axidma/xaxidma_sinit.c \
+		bsp/xilinx/axiethernet/xaxiethernet.c \
+		bsp/xilinx/axiethernet/xaxiethernet_control.c \
+		bsp/xilinx/axiethernet/xaxiethernet_g.c \
+		bsp/xilinx/axiethernet/xaxiethernet_sinit.c \
+		bsp/xilinx/iic/xiic.c \
+		bsp/xilinx/iic/xiic_g.c \
+		bsp/xilinx/iic/xiic_l.c \
+		bsp/xilinx/iic/xiic_sinit.c \
+		bsp/xilinx/iic/xiic_selftest.c \
+		bsp/xilinx/iic/xiic_master.c \
+		bsp/xilinx/iic/xiic_intr.c \
+		bsp/xilinx/iic/xiic_stats.c \
+		bsp/xilinx/spi/xspi.c \
+		bsp/xilinx/spi/xspi_g.c \
+		bsp/xilinx/spi/xspi_sinit.c \
+		bsp/xilinx/spi/xspi_selftest.c \
+		bsp/xilinx/spi/xspi_options.c \
+		bsp/xilinx/gpio/xgpio.c \
+		bsp/xilinx/gpio/xgpio_extra.c \
+		bsp/xilinx/gpio/xgpio_g.c \
+		bsp/xilinx/gpio/xgpio_intr.c \
+		bsp/xilinx/gpio/xgpio_selftest.c \
+		bsp/xilinx/gpio/xgpio_sinit.c \
+		bsp/xilinx/common/xbasic_types.c \
+		bsp/xilinx/common/xil_io.c \
+		bsp/xilinx/common/xil_assert.c
+	INCLUDES += \
+		-I./bsp/xilinx \
+		-I./bsp/xilinx/common \
+		-I./bsp/xilinx/axidma \
+		-I./bsp/xilinx/axiethernet \
+		-I./bsp/xilinx/uartns550 \
+		-I./bsp/xilinx/iic \
+		-I./bsp/xilinx/spi \
+		-I./bsp/xilinx/gpio
+else
+ifeq ($(BSP),awsf1)
+	BSP_SRC = \
+		bsp/uart_sifive.c \
+		bsp/icenet.c \
+		bsp/iceblk.c
+	include envAws.mk
+else 
+$(error unknown Board Support Package (BSP) selected: $(BSP))
+endif
+endif
 
-INCLUDES += \
-	-I. \
-	-I./bsp \
-	-I./bsp/xilinx \
-	-I./bsp/xilinx/common \
-	-I./bsp/xilinx/axidma \
-	-I./bsp/xilinx/axiethernet \
-	-I./bsp/xilinx/uartns550 \
-	-I./bsp/xilinx/iic \
-	-I./bsp/xilinx/spi \
-	-I./bsp/xilinx/gpio \
+APP_SRC += $(BSP_SRC)
 
 ASFLAGS  += -g $(ARCH) $(ABI)  -Wa,-Ilegacy \
 	-I$(FREERTOS_SOURCE_DIR)/portable/GCC/RISC-V/chip_specific_extensions/RV32I_CLINT_no_extensions \
@@ -190,9 +217,14 @@ FREERTOS_IP_SRC = \
 	$(FREERTOS_TCP_SOURCE_DIR)/FreeRTOS_TCP_WIN.c \
 	$(FREERTOS_TCP_SOURCE_DIR)/FreeRTOS_Stream_Buffer.c \
 	$(FREERTOS_TCP_SOURCE_DIR)/portable/BufferManagement/BufferAllocation_2.c \
-	$(FREERTOS_TCP_SOURCE_DIR)/portable/NetworkInterface/RISC-V/riscv_hal_eth.c \
 	$(FREERTOS_TCP_SOURCE_DIR)/portable/NetworkInterface/RISC-V/NetworkInterface.c \
 	bsp/rand.c
+
+ifeq ($(BSP), awsf1)
+FREERTOS_IP_SRC += $(FREERTOS_TCP_SOURCE_DIR)/portable/NetworkInterface/RISC-V/riscv_icenet_eth.c 
+else
+FREERTOS_IP_SRC += $(FREERTOS_TCP_SOURCE_DIR)/portable/NetworkInterface/RISC-V/riscv_hal_eth.c 
+endif
 
 FREERTOS_IP_INCLUDE = \
 	-I$(FREERTOS_TCP_SOURCE_DIR) \
@@ -203,6 +235,14 @@ FREERTOS_IP_DEMO_SRC = \
 	demo/SimpleUDPClientAndServer.c \
 	demo/TCPEchoClient_SingleTasks.c \
 	demo/SimpleTCPEchoServer.c
+
+ifeq ($(CHERI),1)
+	FREERTOS_CHERI_SRC = ../../../FreeRTOS-Labs/FreeRTOS-Labs/Source/FreeRTOS-libcheri/cheri/cheri-riscv.c
+	FREERTOS_CHERI_INCLUDE = -I../../../FreeRTOS-Labs/FreeRTOS-Labs/Source/FreeRTOS-libcheri/include
+
+	FREERTOS_SRC += $(FREERTOS_CHERI_SRC)
+	INCLUDES += $(FREERTOS_CHERI_INCLUDE)
+endif
 
 ifeq ($(PROG),main_blinky)
 	CFLAGS += -DmainDEMO_TYPE=1
@@ -236,7 +276,6 @@ ifeq ($(PROG),main_iic)
 else
 ifeq ($(PROG),main_gpio)
 	CFLAGS += -DmainDEMO_TYPE=4
-	INCLUDES += -I./demo
 else
 ifeq ($(PROG),main_tcp)
 	CFLAGS += -DmainDEMO_TYPE=5
@@ -274,14 +313,24 @@ else
 ifeq ($(PROG),main_sd)
 	CFLAGS += -DmainDEMO_TYPE=6
 	CPPLAGS += -DmainDEMO_TYPE=6
+	USE_RTC_CLOCK ?= 0
+
+ifeq ($(BSP),awsf1)
+	DEMO_SRC += FatFs/source/diskio.c \
+			 	FatFs/source/ff.c \
+				 FatFs/source/ffsystem.c \
+				 FatFs/source/ffunicode.c \
+			 	FatFs/source/ff_demo.c
+	INCLUDES += -I./FatFs/source
+else
 	CPP_SRC += SD/src/SD.cpp \
 			   SD/src/File.cpp \
 			   SD/src/utility/Sd2Card.cpp \
 			   SD/src/utility/SdFile.cpp \
 			   SD/src/utility/SdVolume.cpp \
 			   SD/src/SDLib.cpp
-SD_EXAMPLE ?= CardInfo
-USE_RTC_CLOCK ?= 0
+	INCLUDES += -I./SD/src
+	SD_EXAMPLE ?= CardInfo
 $(info SD_EXAMPLE=${SD_EXAMPLE})
 ifeq ($(SD_EXAMPLE),ReadWrite)
 	CPP_SRC += SD/examples/SdDemo_ReadWrite.cpp
@@ -300,8 +349,8 @@ endif
 endif
 endif
 endif
+endif
 
-	INCLUDES += -I./SD/src
 ifeq ($(USE_RTC_CLOCK),1)
 # Below includes for RTC clock (SD FAT time)
 	CFLAGS += -DUSE_RTC_CLOCK=1
@@ -335,9 +384,21 @@ else
 ifeq ($(PROG),main_uart_malware)
 	CFLAGS += -DmainDEMO_TYPE=11
 else
-ifeq ($(PROG),main_fett)
+ifeq ($(PROG),main_besspin)
 	CFLAGS += -DmainDEMO_TYPE=12
-	include $(INC_FETT_APPS)/envFett.mk
+	ifeq ($(DEMO),cyberphys)
+	# Demo cyberphys
+	CFLAGS += -DFETT_APPS -DFREERTOS -DBSP_USE_IIC0 -DUSE_CURRENT_TIME
+	WERROR =
+	INCLUDES += $(FREERTOS_IP_INCLUDE) \
+		-I./cyberphys
+	FREERTOS_SRC += $(FREERTOS_IP_SRC)
+	DEMO_SRC += cyberphys/canlib.c \
+    	cyberphys/j1939.c
+	else
+	# regular FETT compilation
+	include $(INC_BESSPIN_TOOL_SUITE)/envBesspin.mk
+	endif
 else
 ifeq ($(PROG),main_netboot)
 	CFLAGS += -DmainDEMO_TYPE=13 -DNETBOOT
@@ -347,7 +408,7 @@ ifeq ($(PROG),main_netboot)
 else
 $(error unknown demo: $(PROG))
 endif # main_netboot
-endif # main_fett
+endif # main_besspin
 endif # main_uart_malware
 endif # main_rtc
 endif # main_uart
