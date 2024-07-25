@@ -20,9 +20,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef FREERTOS
+    #include "FreeRTOS.h"
+#endif
+
 #ifndef FREERTOS
     #include <sys/socket.h>
 #endif
+
+TickType_t BeginTime;
+TickType_t EndTime;
 
 /**
  * BAM Data Frame Contents
@@ -218,6 +225,8 @@ uint8_t send_can_message(canlib_socket_t socket, canlib_sockaddr_t *dstaddr, uin
     }
 }
 
+
+
 static void* rmsg = NULL;
 
 uint8_t recv_can_message(canlib_socket_t socket, canlib_sockaddr_t *srcaddr, canid_t *can_id,
@@ -282,7 +291,10 @@ uint8_t recv_can_message(canlib_socket_t socket, canlib_sockaddr_t *srcaddr, can
 
             rmsg = (void *)bam_can_frames_to_data((can_frame *)buffer);
             *rmessage_len = rnbytes;
+            printf("(recv_can_message) rmessage: %s\r\n", rmsg);
+
             printf("(recv_can_message) rmessage_len: %lu\r\n", *rmessage_len);
+            BeginTime = xTaskGetTickCount();
             memcpy(rmessage, (void *)rmsg, *rmessage_len);
             canlib_free(rmsg);
             rmsg = NULL;
@@ -313,6 +325,20 @@ static void CheriFreeRTOS_FaultHandler(void* pvParameter1, uint32_t comp_id) __a
   if (rmsg != NULL) {
     canlib_free(rmsg);
   }
+//FreeRTOS_printf(("INSIDE HANDLER\r\n"));
+//printf("HANDLER DEBUG\n");
+rmsg = NULL;
+printf(("\nEND OF HANDLER\r\n")); 
+    EndTime = xTaskGetTickCount();
+    TickType_t t = EndTime - BeginTime;
+    uint32_t n_seconds = t / configTICK_RATE_HZ;
+    uint32_t n_ms = t - n_seconds * configTICK_RATE_HZ;
+    n_ms = (n_ms * 1000) / configTICK_RATE_HZ;
+    uint32_t n_minutes = n_seconds / 60;
+    uint32_t n_hours = n_minutes / 60;
 
-  rmsg = NULL;
+    n_seconds = n_seconds - n_minutes * 60;
+    n_minutes = n_minutes - n_hours * 60;
+    printf("time: ms:%03u seconds:%02u minutes:%02u",n_ms, n_seconds, n_minutes);
 }
+
