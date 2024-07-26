@@ -294,7 +294,7 @@ uint8_t recv_can_message(canlib_socket_t socket, canlib_sockaddr_t *srcaddr, can
             printf("(recv_can_message) rmessage: %s\r\n", rmsg);
 
             printf("(recv_can_message) rmessage_len: %lu\r\n", *rmessage_len);
-            BeginTime = xTaskGetTickCount();
+            //BeginTime = xTaskGetTickCount();
             memcpy(rmessage, (void *)rmsg, *rmessage_len);
             canlib_free(rmsg);
             rmsg = NULL;
