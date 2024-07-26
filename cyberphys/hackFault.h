@@ -6,4 +6,6 @@ int fault2();
 int fault3(int x);
 int fault4(char buf[50]);
 int fault5(int x);
+int fault6(char * global_buffer);
+int fault7(char * global_buffer);
 //void fault();

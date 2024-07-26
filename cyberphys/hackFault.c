@@ -29,9 +29,19 @@ int fault4(char * buf){
 }
 
 int fault5(int x){
-     innerFunct(x);
+    innerFunct(x);
 }
 
+int fault6(char * global_buffer){
+   for(int i=0; i < 40; i++){
+     global_buffer[i] = '6';
+   }
+   return 1;
+}
+
+int fault7(char * global_buffer){
+   return 1;
+}
 
 int fault(char * buffer){
      //memset(buffer, 0x00, sizeof(buffer));
