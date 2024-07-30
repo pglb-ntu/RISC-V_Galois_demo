@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #define ECOMPKILLED -2
+#include "FreeRTOS.h"
 
 int counter = 0;
 
@@ -40,8 +41,20 @@ int fault6(char * global_buffer){
 }
 
 int fault7(char * global_buffer){
-   return 1;
+  char buffer[5];
+  global_buffer = &buffer;
+  return 1;
 }
+
+int fault8(){
+     counter++;
+     return counter;
+}
+
+int fault9(int (*funct)()){
+     funct();
+}
+
 
 int fault(char * buffer){
      //memset(buffer, 0x00, sizeof(buffer));
