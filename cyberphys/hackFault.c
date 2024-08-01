@@ -56,7 +56,13 @@ int fault9(int (*funct)()){
 }
 
 
+int test(){
+     return 1;
+}
+
 int fault(char * buffer){
+     
+     
      //memset(buffer, 0x00, sizeof(buffer));
      printf("first test\n");
      //char buffer2[30];
@@ -69,6 +75,7 @@ int fault(char * buffer){
      }
      strcpy(buffer, "testing after killed behavior");
      //printf("buffer2:%s\n",buffer2);
+     
      return 1;
 }
 

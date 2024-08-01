@@ -28,8 +28,8 @@
     #include <sys/socket.h>
 #endif
 
-TickType_t BeginTime;
-TickType_t EndTime;
+TickType_t BeginUDPTime;
+TickType_t EndUDPTime;
 
 /**
  * BAM Data Frame Contents
@@ -294,7 +294,7 @@ uint8_t recv_can_message(canlib_socket_t socket, canlib_sockaddr_t *srcaddr, can
             printf("(recv_can_message) rmessage: %s\r\n", rmsg);
 
             printf("(recv_can_message) rmessage_len: %lu\r\n", *rmessage_len);
-            //BeginTime = xTaskGetTickCount();
+            //BeginUDPTime = xTaskGetTickCount();
             memcpy(rmessage, (void *)rmsg, *rmessage_len);
             canlib_free(rmsg);
             rmsg = NULL;
@@ -329,8 +329,8 @@ static void CheriFreeRTOS_FaultHandler(void* pvParameter1, uint32_t comp_id) __a
 //printf("HANDLER DEBUG\n");
 rmsg = NULL;
 printf(("\nEND OF HANDLER\r\n")); 
-    EndTime = xTaskGetTickCount();
-    TickType_t t = EndTime - BeginTime;
+    EndUDPTime = xTaskGetTickCount();
+    TickType_t t = EndUDPTime - BeginUDPTime;
     uint32_t n_seconds = t / configTICK_RATE_HZ;
     uint32_t n_ms = t - n_seconds * configTICK_RATE_HZ;
     n_ms = (n_ms * 1000) / configTICK_RATE_HZ;
